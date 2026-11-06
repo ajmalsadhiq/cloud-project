@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: cloudvault-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: cloudvault
+    volumes:
+      - mongo-data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cloudvault-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongodb:27017/cloudvault
+      - JWT_SECRET=supersecret_jwt_key_for_development_32chars
+      - JWT_EXPIRES_IN=7d
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=placeholder_key
+      - AWS_SECRET_ACCESS_KEY=placeholder_secret
+      - AWS_S3_BUCKET_NAME=cloudvault-files
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - mongodb
+
+volumes:
+  mongo-data:
