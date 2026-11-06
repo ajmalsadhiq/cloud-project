@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Loader2,
   X,
+  ShieldCheck,
 } from "lucide-react";
 import apiClient from "../../lib/api";
 import { formatBytes } from "../../lib/utils";
@@ -68,15 +69,15 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
 
     setUploadQueue((prev) => [...prev, ...newItems]);
 
-    // Process each file sequentially or in parallel
+    // Process each file with progress tracking
     for (const file of files) {
-      await uploadSingleFile(file);
+      await uploadFileWithProgress(file);
     }
 
     onUploadSuccess();
   };
 
-  const uploadSingleFile = async (file: File) => {
+  const uploadFileWithProgress = async (file: File) => {
     const updateStatus = (
       status: UploadingFile["status"],
       progress: number,
@@ -92,7 +93,7 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
     };
 
     try {
-      updateStatus("uploading", 10);
+      updateStatus("uploading", 5);
 
       // Step 1: Request presigned S3 upload URL from CloudVault API
       const urlRes = await apiClient.post<
@@ -113,21 +114,37 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
       }
 
       const { uploadUrl, s3Key } = urlRes.data.data;
-      updateStatus("uploading", 40);
 
-      // Step 2: Upload file contents directly to S3 (or mock upload)
-      if (!uploadUrl.includes("s3-upload-mock")) {
-        // Direct PUT to Amazon S3
-        await fetch(uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": file.type || "application/octet-stream",
-          },
-          body: file,
-        });
-      }
+      // Step 2: Upload file contents directly to S3 via XHR to monitor progress
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", uploadUrl, true);
+        xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
 
-      updateStatus("confirming", 80);
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            // Scale progress from 10% to 90%
+            const pct = Math.round(10 + (event.loaded / event.total) * 80);
+            updateStatus("uploading", pct);
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`S3 upload failed with status ${xhr.status}: ${xhr.statusText}`));
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error("Network error during direct S3 streaming. Check S3 CORS policy."));
+        };
+
+        xhr.send(file);
+      });
+
+      updateStatus("confirming", 95);
 
       // Step 3: Register file metadata in MongoDB
       const confirmRes = await apiClient.post<ApiResponse<FileItem>>(
@@ -200,7 +217,10 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
       {uploadQueue.length > 0 && (
         <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
-            <span>Upload Queue ({uploadQueue.length})</span>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-blue-400" />
+              <span>Direct S3 Upload Stream ({uploadQueue.length})</span>
+            </div>
             <button
               onClick={() => setUploadQueue([])}
               className="text-[11px] text-slate-500 hover:text-white"
@@ -213,54 +233,66 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
             {uploadQueue.map((item, idx) => (
               <div
                 key={idx}
-                className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 text-xs flex items-center justify-between gap-4"
+                className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 text-xs flex flex-col gap-2"
               >
-                <div className="flex items-center gap-3 truncate">
-                  <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
-                    <File className="w-4 h-4 text-blue-400" />
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 truncate">
+                    <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
+                      <File className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="truncate">
+                      <div className="font-medium text-slate-200 truncate">{item.name}</div>
+                      <div className="text-[10px] text-slate-500">{formatBytes(item.size)}</div>
+                    </div>
                   </div>
-                  <div className="truncate">
-                    <div className="font-medium text-slate-200 truncate">{item.name}</div>
-                    <div className="text-[10px] text-slate-500">{formatBytes(item.size)}</div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    {item.status === "uploading" && (
+                      <div className="flex items-center gap-2 text-blue-400 text-[11px]">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>{item.progress}% S3 Stream</span>
+                      </div>
+                    )}
+
+                    {item.status === "confirming" && (
+                      <div className="flex items-center gap-2 text-indigo-400 text-[11px]">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Registering metadata...</span>
+                      </div>
+                    )}
+
+                    {item.status === "completed" && (
+                      <div className="flex items-center gap-1.5 text-emerald-400 text-[11px]">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>S3 Confirmed</span>
+                      </div>
+                    )}
+
+                    {item.status === "error" && (
+                      <div className="flex items-center gap-1 text-red-400 text-[11px]" title={item.errorMessage}>
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="truncate max-w-[120px]">{item.errorMessage}</span>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => removeQueueItem(item.name)}
+                      className="p-1 rounded-lg text-slate-600 hover:text-slate-400"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                  {item.status === "uploading" && (
-                    <div className="flex items-center gap-2 text-blue-400 text-[11px]">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Streaming to S3...</span>
-                    </div>
-                  )}
-
-                  {item.status === "confirming" && (
-                    <div className="flex items-center gap-2 text-indigo-400 text-[11px]">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Registering metadata...</span>
-                    </div>
-                  )}
-
-                  {item.status === "completed" && (
-                    <div className="flex items-center gap-1.5 text-emerald-400 text-[11px]">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Saved</span>
-                    </div>
-                  )}
-
-                  {item.status === "error" && (
-                    <div className="flex items-center gap-1 text-red-400 text-[11px]" title={item.errorMessage}>
-                      <AlertCircle className="w-4 h-4" />
-                      <span className="truncate max-w-[120px]">{item.errorMessage}</span>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => removeQueueItem(item.name)}
-                    className="p-1 rounded-lg text-slate-600 hover:text-slate-400"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                {/* Real-time upload progress bar */}
+                {item.status === "uploading" && (
+                  <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-150"
+                      style={{ width: `${item.progress}%` }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
