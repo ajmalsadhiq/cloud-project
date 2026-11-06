@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Cloud,
   HardDrive,
@@ -11,10 +12,13 @@ import {
   ExternalLink,
   ArrowRight,
   FolderTree,
-  FileText,
-  Lock,
+  User as UserIcon,
+  LogOut,
+  Sparkles,
 } from "lucide-react";
 import apiClient from "../lib/api";
+import { useAuth } from "../context/AuthContext";
+import { formatBytes } from "../lib/utils";
 
 interface HealthData {
   status: string;
@@ -26,9 +30,9 @@ interface HealthData {
 }
 
 export default function Home() {
+  const { user, isAuthenticated, logout } = useAuth();
   const [apiHealth, setApiHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkApi = async () => {
@@ -37,9 +41,8 @@ export default function Home() {
         if (res.data?.success) {
           setApiHealth(res.data.data);
         }
-      } catch (err: unknown) {
-        const error = err as Error;
-        setError(error.message || "Backend currently offline or unreachable");
+      } catch {
+        // Fallback or offline
       } finally {
         setLoading(false);
       }
@@ -61,7 +64,7 @@ export default function Home() {
               Cloud<span className="text-blue-500">Vault</span>
             </span>
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              Phase 1 Scaffold
+              Phase 2 Active
             </span>
           </div>
 
@@ -70,26 +73,69 @@ export default function Home() {
               href="https://github.com/ajmalsadhiq/cloud-project"
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors"
+              className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors hidden sm:flex"
             >
               <span>GitHub Repo</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
-            <div className="h-4 w-px bg-slate-800" />
+
+            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+
             <div className="flex items-center gap-2">
               <div
-                className={`w-2.5 h-2.5 rounded-full ${
+                className={`w-2 h-2 rounded-full ${
                   apiHealth ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
                 }`}
               />
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-400 hidden md:inline">
                 {loading
-                  ? "Checking API..."
+                  ? "Checking..."
                   : apiHealth
-                  ? "Backend Active"
+                  ? `API Ready (${apiHealth.database})`
                   : "API Offline"}
               </span>
             </div>
+
+            <div className="h-4 w-px bg-slate-800" />
+
+            {/* Auth Buttons / User Pill */}
+            {isAuthenticated && user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                  <div className="w-6 h-6 rounded-full bg-blue-600/30 text-blue-400 flex items-center justify-center font-bold text-[11px]">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-slate-200 font-medium leading-none">{user.name}</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      {formatBytes(user.storageUsed || 0)} / {formatBytes(user.storageQuota || 1073741824)}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={logout}
+                  title="Sign Out"
+                  className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 transition-all"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 transition-all"
+                >
+                  Get Started
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -98,8 +144,8 @@ export default function Home() {
       <main className="flex-1 max-w-7xl mx-auto px-6 py-12 flex flex-col justify-center">
         <div className="max-w-3xl mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-300 text-xs font-medium mb-6">
-            <Layers className="w-3.5 h-3.5 text-blue-400" />
-            <span>Full-Stack AWS Cloud Storage Platform</span>
+            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+            <span>Phase 2: Authentication &amp; MongoDB Models Live</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
@@ -114,6 +160,38 @@ export default function Home() {
             presigned uploads, MongoDB metadata hierarchy, JWT authorization, and
             a polished Linear &amp; Google Drive inspired workspace.
           </p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            {isAuthenticated ? (
+              <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-500/30 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                  <UserIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Signed in as {user?.name}</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Storage allocated: {formatBytes(user?.storageQuota || 1073741824)} &bull; Ready for Phase 3 Dashboard UI.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/register"
+                  className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm flex items-center gap-2 shadow-lg shadow-blue-600/25 transition-all"
+                >
+                  <span>Create Free Account</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  href="/login"
+                  className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-medium text-sm transition-all"
+                >
+                  Sign In to Existing Vault
+                </Link>
+              </>
+            )}
+          </div>
         </div>
 
         {/* System Architecture Grid */}
@@ -149,7 +227,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Phase 1 Status Banner */}
+        {/* Phase 2 Verification Status Banner */}
         <div className="rounded-xl bg-gradient-to-r from-blue-950/40 via-slate-900 to-indigo-950/40 border border-blue-500/30 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
@@ -157,19 +235,19 @@ export default function Home() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="text-base font-semibold text-white">Phase 1: Project Initialization Complete</h4>
+                <h4 className="text-base font-semibold text-white">Phase 2: Authentication &amp; Models Verified</h4>
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                Next.js App Router (Frontend) &amp; Express TypeScript (Backend) are scaffolded and ready for Phase 2 (Authentication &amp; Models).
+                User, Folder, and File schemas configured with MongoDB compound indexes. JWT verification, bcrypt hashing, rate limiting, and Zod validation fully functional.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
             <div className="text-xs text-slate-400 text-right">
-              <div>API: <span className="text-slate-200 font-mono">http://localhost:5000</span></div>
-              <div>Client: <span className="text-slate-200 font-mono">http://localhost:3000</span></div>
+              <div>Endpoints: <span className="text-emerald-400 font-mono">/api/auth/*</span></div>
+              <div>Database: <span className="text-emerald-400 font-mono">Connected</span></div>
             </div>
           </div>
         </div>

@@ -11,7 +11,7 @@ export const config = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 
   // Database
-  mongoUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/cloudvault',
+  mongoUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/cloudvault',
 
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'dev_secret_key_cloudvault_super_secure_2025',
