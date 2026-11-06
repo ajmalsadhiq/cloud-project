@@ -42,6 +42,9 @@ const folderSchema = new Schema<IFolderDocument>(
     toJSON: {
       transform(_doc, ret: Record<string, unknown>) {
         ret.id = ret._id ? ret._id.toString() : '';
+        if (ret.parentFolderId) {
+          ret.parentFolderId = ret.parentFolderId.toString();
+        }
         delete ret._id;
         delete ret.__v;
         return ret;

@@ -61,6 +61,9 @@ const fileSchema = new Schema<IFileDocument>(
     toJSON: {
       transform(_doc, ret: Record<string, unknown>) {
         ret.id = ret._id ? ret._id.toString() : '';
+        if (ret.folderId) {
+          ret.folderId = ret.folderId.toString();
+        }
         delete ret._id;
         delete ret.__v;
         return ret;
