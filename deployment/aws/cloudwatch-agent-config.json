@@ -1,0 +1,65 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "metrics_collected": {
+      "cpu": {
+        "measurement": [
+          "cpu_usage_idle",
+          "cpu_usage_iowait",
+          "cpu_usage_user",
+          "cpu_usage_system"
+        ],
+        "metrics_collection_interval": 60,
+        "totalcpu": true
+      },
+      "mem": {
+        "measurement": [
+          "mem_used_percent",
+          "mem_available"
+        ],
+        "metrics_collection_interval": 60
+      },
+      "disk": {
+        "measurement": [
+          "used_percent"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ]
+      }
+    },
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/lib/docker/volumes/cloud_backend-logs/_data/backend.log",
+            "log_group_name": "/aws/ec2/cloudvault/backend",
+            "log_stream_name": "{instance_id}-backend",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/lib/docker/volumes/cloud_nginx-logs/_data/access.log",
+            "log_group_name": "/aws/ec2/cloudvault/nginx-access",
+            "log_stream_name": "{instance_id}-nginx-access",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/lib/docker/volumes/cloud_nginx-logs/_data/error.log",
+            "log_group_name": "/aws/ec2/cloudvault/nginx-error",
+            "log_stream_name": "{instance_id}-nginx-error",
+            "timezone": "UTC"
+          }
+        ]
+      }
+    }
+  }
+}
