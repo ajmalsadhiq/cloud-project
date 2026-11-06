@@ -163,16 +163,23 @@ export default function Home() {
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
             {isAuthenticated ? (
-              <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-500/30 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl bg-blue-950/40 border border-blue-500/30">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
                   <UserIcon className="w-5 h-5" />
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-white">Signed in as {user?.name}</h4>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Storage allocated: {formatBytes(user?.storageQuota || 1073741824)} &bull; Ready for Phase 3 Dashboard UI.
+                    Storage allocated: {formatBytes(user?.storageQuota || 1073741824)} &bull; Ready to access your cloud vault.
                   </p>
                 </div>
+                <Link
+                  href="/dashboard"
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs flex items-center gap-2 shadow-lg shadow-blue-600/25 transition-all sm:ml-4"
+                >
+                  <span>Launch Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
             ) : (
               <>

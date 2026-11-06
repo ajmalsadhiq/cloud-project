@@ -11,7 +11,7 @@ export interface FolderItem {
   id: string;
   name: string;
   parentFolderId: string | null;
-  path: string;
+  path?: string;
   createdAt: string;
   itemCount?: number;
 }
@@ -25,23 +25,38 @@ export interface FileItem {
   s3Key: string;
   folderId: string | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   downloadUrl?: string;
+}
+
+export interface CategoryStat {
+  count: number;
+  totalSize: number;
 }
 
 export interface DashboardStats {
   totalFiles: number;
+  totalFolders: number;
   storageConsumed: number;
   storageQuota: number;
   availableQuota: number;
   storageUsagePercent: number;
-  fileTypeDistribution: {
-    images: { count: number; size: number };
-    documents: { count: number; size: number };
-    media: { count: number; size: number };
-    archives: { count: number; size: number };
-    others: { count: number; size: number };
+  categories: {
+    images: CategoryStat;
+    documents: CategoryStat;
+    media: CategoryStat;
+    archives: CategoryStat;
+    others: CategoryStat;
   };
+  recentUploads: Array<{
+    id: string;
+    name: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    createdAt: string;
+    folderId: string | null;
+  }>;
 }
 
 export interface ApiResponse<T = unknown> {
