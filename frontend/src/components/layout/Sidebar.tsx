@@ -41,17 +41,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       name: "All Files",
-      href: "/dashboard/files",
+      href: "/files",
       icon: Files,
     },
     {
       name: "Folders",
-      href: "/dashboard/folders",
+      href: "/folders",
       icon: FolderTree,
     },
     {
       name: "Storage & Settings",
-      href: "/dashboard/settings",
+      href: "/settings",
       icon: Settings,
     },
   ];

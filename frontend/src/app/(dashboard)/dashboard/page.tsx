@@ -92,7 +92,7 @@ export default function DashboardPage() {
           </button>
 
           <Link
-            href="/dashboard/files"
+            href="/files"
             className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all"
           >
             <UploadCloud className="w-4 h-4" />

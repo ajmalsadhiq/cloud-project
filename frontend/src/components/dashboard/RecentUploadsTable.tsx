@@ -72,7 +72,7 @@ export const RecentUploadsTable: React.FC<RecentUploadsTableProps> = ({
         </div>
 
         <Link
-          href="/dashboard/files"
+          href="/files"
           className="text-xs font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
         >
           <span>View All Files</span>
@@ -90,7 +90,7 @@ export const RecentUploadsTable: React.FC<RecentUploadsTableProps> = ({
             Upload files using drag-and-drop or the upload button to begin tracking your cloud storage.
           </p>
           <Link
-            href="/dashboard/files"
+            href="/files"
             className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium shadow-md shadow-blue-600/20 transition-all inline-flex items-center gap-2"
           >
             <UploadCloud className="w-4 h-4" />
